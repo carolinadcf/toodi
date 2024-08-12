@@ -1,0 +1,44 @@
+<html>
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Toodi</title>
+        <link rel="icon" type="image/x-icon" href="../data/imgs/y2k toodi low.png">
+        <link rel="stylesheet" type="text/css" href="./style.css" />
+        <script type="module">
+          import { handleClick, handleDataTypeChange  } from './toodi.js';
+  
+          // Set up the global functions
+          window.handleClick = handleClick;
+          window.handleDataTypeChange = handleDataTypeChange;
+      </script>
+    </head>
+
+    <body>
+        <div id="msg">
+          <img src="../data/imgs/y2k toodi rect.png" alt="Toodi Logo" style="width: 300px;" class="center">
+          <h1> Welcome to Toodi!</h1>
+        </div>
+        <div class="button-container" id="button-container">
+          <button id="mire" class="y2k-button" onclick="handleClick('Mire')">Mire</button>
+          <button id="alex" class="y2k-button" onclick="handleClick('Alex')">Alex</button>
+          <button id="carol" class="y2k-button" onclick="handleClick('')">Carol</button>
+        </div>
+
+        <div id="drop-zone">Or drop your file here</div>
+
+        <div class="radio-container" id="radio-container">
+          <input type="radio" id="artists" name="data-type" value="artists" onchange="handleDataTypeChange(event)" checked>
+          <label for="artists">Artists</label>
+          <input type="radio" id="tracks" name="data-type" value="tracks" onchange="handleDataTypeChange(event)">
+          <label for="tracks">Tracks</label>
+        </div>
+
+        <canvas id="canvas"></canvas>
+        <button id="playPauseBtn" class="y2k-button" style="position: absolute; top: 10px; right: 10px; visibility: hidden;">Pause</button>
+        <button id="downloadBtn" class="y2k-button" style="position: absolute; top: 10px; right: 10px; visibility: hidden;">Download</button>
+
+    </body>
+</html>
+
+

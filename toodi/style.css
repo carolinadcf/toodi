@@ -1,0 +1,123 @@
+body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    margin: 0;
+  }
+
+  h1, h2, a, p, div {
+      font-family: verdana;
+      text-align: center;
+      display: block;
+  }
+
+  /* Additional styles for side-by-side buttons */
+  .button-container {
+    display: flex;
+    justify-content: center;
+  }
+
+  .center {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+    width: 50%;
+  }
+
+  .y2k-button {
+    font-family: verdana;
+    font-size: 1.2em;
+    font-weight: bold;
+    margin: 5px;
+    padding: 15px 30px;
+    background: linear-gradient(45deg, #edfe32, #a161ea);
+    color: #fff;
+    border: 2px solid #a161ea;
+    border-radius: 25px;
+    cursor: pointer;
+    outline: none;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+  }
+
+  .y2k-button:hover {
+    transform: scale(1.1);
+    box-shadow: 0 0 20px rgba(237, 254, 50, 0.8);
+  }
+
+  /* Add these styles to your existing CSS or create a new style section */
+
+.y2k-artist-name {
+  font-size: 16px;
+  font-weight: bold;
+  color: #FFD700; /* Gold */
+}
+
+.y2k-bar-chart {
+  background-color: #FFD700; /* Gold */
+  border: 1px solid #000; /* Black border */
+  transition: background-color 0.3s;
+}
+
+.y2k-bar-chart:hover {
+  background-color: #000; /* Black on hover */
+  color: #FFD700; /* Gold text on hover */
+}
+
+/* Drop zone styling adapted to match app look */
+
+#drop-zone {
+  width: 60%;
+  max-width: 300px;
+  padding: 40px;
+  border: 3px dashed #a161ea; /* Matching border color to your button */
+  border-radius: 15px; /* Slightly rounded corners for consistency */
+  background-color: #f9f9f9; /* Subtle background color */
+  color: #a161ea; /* Consistent color with your buttons */
+  text-align: center; /* Center text for a cleaner look */
+  transition: background-color 0.3s, border-color 0.3s, transform 0.3s;
+  margin-top: 30px;
+}
+
+#drop-zone.dragover {
+  background-color: #e6e6ff; /* Light background on drag over */
+  border-color: #a161ea; /* Matching border color */
+  transform: scale(1.02); /* Slight scale effect for feedback */
+}
+
+/* Radio button styling */
+.radio-container {
+  display: flex;
+  justify-content: center;
+  margin: 20px 0;
+}
+
+.radio-container label {
+  font-family: verdana;
+  font-size: 1.2em;
+  font-weight: bold;
+  margin: 0 10px;
+  padding: 10px 20px;
+  background: #ffffff;
+  color: #302d2d;
+  border: 2px solid #a161ea;
+  border-radius: 25px;
+  cursor: pointer;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.radio-container label:hover {
+  transform: scale(1.1);
+  box-shadow: 0 0 20px rgba(237, 254, 50, 0.8);
+}
+
+.radio-container input[type="radio"] {
+  display: none;
+}
+
+.radio-container input[type="radio"]:checked + label {
+  color: #fff;
+  background: linear-gradient(45deg, #a161ea, #edfe32);
+  box-shadow: 0 0 20px rgba(161, 97, 234, 0.8);
+}
