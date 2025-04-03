@@ -96,7 +96,8 @@ function init(statsPath) {
     function updateChart(dayData) {
         // Update cumulative playtime for each artist
         dayData.forEach( item => {
-            const name = selectedDataType === "artists" ? item.artistName : item.trackName;
+            // const name = selectedDataType === "artists" ? item.artistName : item.trackName;
+            const name = item.name;
             cumulativeData[name] = (cumulativeData[name] || 0) + item.msPlayed;
 
             // if (!artistColors[name]) {
@@ -186,7 +187,10 @@ function init(statsPath) {
    
     document.getElementById('playPauseBtn').style.visibility = "visible";
     
-    function togglePlayPause() {
+    
+}
+
+function togglePlayPause() {
         isPlaying = !isPlaying;
         document.getElementById('playPauseBtn').innerHTML = isPlaying ? "Pause" : "Play";
         
@@ -196,8 +200,6 @@ function init(statsPath) {
             cancelAnimationFrame(animationId); // Stop the animation
         }
     }
-}
-
 
 // Function to generate a random color
 function getRandomColor() {

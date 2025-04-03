@@ -1,120 +1,152 @@
 class Stats {
+  /**
+   * Build stats for user's streaming history
+   * @param {*} sampleUrl streaming history file path
+   * @param {*} callback called after data is loaded and stats are computed
+   */
   constructor(sampleUrl, callback = null) {
 
-    this.artists = {}; // {artists: msplayed}
-    this.tracks = {}; // {track: msplayed}
+    this._artists = null; // {artist name: total msplayed}
+    this._tracks = null; // {track name: [replays,  endtime, total msplayed]}
 
-    this.dailyTracksArray = [];
+    this.totalPlaytimeTopTrack = 0;
+    this.totalPlaytimeTopArtist = 0;
+
+    this.dailyTotal = { "tracks": [], "artists": [] }; //for everyday, the top
     this.topForDay = { "tracks": {}, "artists": {} };
-    this.allTopForDay = {};
 
     this.loadData(sampleUrl, callback);
   }
 
+  get artists() {
+    if (this._artists === null) {
+      this._artists = new Map();
+    }
+    return this._artists;
+  }
+
+  get tracks() {
+    if (this._tracks === null) {
+      this._tracks = new Map();
+    }
+    return this._tracks;
+  }
+  
   async loadData(url, callback) {
     try {
       const response = await fetch(url);
       const text = await response.text();
       this.data = JSON.parse(text);
 
-      this.processData();
-      this.computeTop5();
+      this.processData(); // fills artists and tracks data objects summary
+      this.computeTopX(5);
       this.calculateDailyStats();
       this.sortByDate();
-      this.getAllTopForDay();
+      // this.getAllTopForDay();
 
+      // Compute total playtime (ms played) for the top artist and track
+      if (this.topArtists.length > 0) { this.totalPlaytimeTopArtist = this.topArtists[0][1]; }
+      if (this.topTracks.length > 0) { this.totalPlaytimeTopTrack = this.topTracks[0][1][2]; }
+      
       if (callback) callback();
     } catch (error) {
       console.error('Error loading data: ', error);
     }
   }
 
+  /**
+   *  computes total ms played and views for all tracks and artists
+   * */
   processData() {
     this.data.forEach(play => {
       if (play.msPlayed > 20000) {
-        this.artists[play.artistName] = (this.artists[play.artistName] || 0) + play.msPlayed;
+        // cumulative ms played for each artist
+        this.artists.set(play.artistName, (this.artists.get(play.artistName) || 0) + play.msPlayed);
 
-        if (!this.tracks[play.trackName]) {
-          this.tracks[play.trackName] = [0, play.endTime, play.msPlayed];
+        const trackKey = `${play.trackName}_${play.artistName}`;
+        if (!this.tracks.has(trackKey)) {
+          // [num replays, last listen, cumulative ms played]
+          this.tracks.set(trackKey, [0, play.endTime, 0]);
         }
-        this.tracks[play.trackName][0] += 1;
-        this.tracks[play.trackName][2] += play.msPlayed;
+        const trackData = this.tracks.get(trackKey);
+        trackData[0] += 1; // replays
+        trackData[2] += play.msPlayed;
       }
     });
   }
 
-  /* get top 5 tracks and artists */
-  computeTop5() {
-    this.top5 = Object.entries(this.tracks)
-      .sort((a, b) => b[1][0] - a[1][0])
-      .slice(0, 5);
+  /**
+   get final top # tracks and artists
+   *  */ 
+  computeTopX(number) {
+    this.topTracks = Array.from(this.tracks.entries())
+      .sort((a, b) => b[1][0] - a[1][0]) // this is by replays
+      .slice(0, number);
 
-    this.top5a = Object.entries(this.artists)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 5);
-
-    // Compute total playtime for the top artist
-    if (this.top5a.length > 0) {
-      const topArtist = this.top5a[0];
-      this.totalPlaytimeTopArtist = topArtist[1];
-    } else {
-      this.totalPlaytimeTopArtist = 0;
-    }
-
-    // Compute total playtime for the top track
-    if (this.top5.length > 0) {
-      const topTrack = this.top5[0];
-      this.totalPlaytimeTopTrack = topTrack[1][2];
-    } else {
-      this.totalPlaytimeTopTrack = 0;
-    }
+    this.topArtists = Array.from(this.artists.entries())
+      .sort((a, b) => b[1] - a[1]) // sort by total ms played
+      .slice(0, number);
   }
 
   calculateDailyStats() {
     const dailyArtists = this.aggregateDailyStats('artistName', 'artists');
     const dailyTracks = this.aggregateDailyStats('trackName', 'tracks');
 
-    this.dailyArtistsArray = this.convertToSortedArray(dailyArtists);
-    this.dailyTracksArray = this.convertToSortedArray(dailyTracks);
+    this.dailyTotal['artists'] = this.convertToSortedArray(dailyArtists);
+    this.dailyTotal['tracks'] = this.convertToSortedArray(dailyTracks);
 
-    this.getTopForDay();
-    this.getTopTracksForDay();
+    this.getTopForDay('artists');
+    this.getTopForDay('tracks');
   }
 
+  /**
+   * for each date gets the ms played for all artists / tracks that day
+   */
   aggregateDailyStats(playKey, type) {
     return this.data.reduce((acc, play) => {
       const date = play.endTime.split(' ')[0];
       const key = play[playKey];
 
-      if (!acc[date]) acc[date] = {};
-      if (!acc[date][key]) acc[date][key] = 0;
+      if (!acc.has(date)) acc.set(date,  new Map());
+      if (!acc.get(date).has(key)) acc.get(date).set(key, 0);
 
-      acc[date][key] += play.msPlayed;
+      acc.get(date).set(key, acc.get(date).get(key) + play.msPlayed);
       return acc;
-    }, {});
+    }, new  Map());
   }
 
+  // Converts the Map to a sorted array
   convertToSortedArray(dailyStats) {
-    return Object.entries(dailyStats).map(([date, stats]) => ({ date, stats }))
-      .sort((a, b) => (a.date > b.date ? 1 : -1));
+    return Array.from(dailyStats.entries()).map(([date, statsMap]) => {
+      // Ensure statsMap is a Map or convert it if necessary
+      if (!(statsMap instanceof Map)) {
+        statsMap = new Map(Object.entries(statsMap)); // Convert to Map if it is an object
+      }
+  
+      return {
+        date,
+        stats: Object.fromEntries(statsMap) // This should now always work
+      };
+    }).sort((a, b) => new Date(a.date) - new Date(b.date));
+  }
+  
+  
+  getTopForDay(type) {
+    this.topForDay[type] = this.getTopItemsForDay(this.dailyTotal[type], type);
   }
 
-  getTopForDay() {
-    this.topForDay.artists = this.getTopItemsForDay(this.dailyArtistsArray, 'artists');
-  }
-
-  getTopTracksForDay() {
-    this.topForDay.tracks = this.getTopItemsForDay(this.dailyTracksArray, 'tracks');
-  }
 
   getTopItemsForDay(dailyArray, type) {
-    return dailyArray.reduce((acc, day) => {
-      const topItems = Object.entries(day.stats)
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 5)
-        .map(([name, msPlayed]) => ({ [type === 'tracks' ? 'trackName' : 'artistName']: name, msPlayed }));
+    return dailyArray.reduce((acc, { date, stats }) => {
+      const topItems = Object.entries(stats)
+        .sort((a, b) => b[1] - a[1]).slice(0, 5)
+        .map(([name, msPlayed]) => ({
+          name,
+          msPlayed,
+          type: type === 'tracks' ? 'trackName' : 'artistName'
+         }));
 
-      acc[day.date] = topItems;
+      acc[date] = topItems;
       return acc;
     }, {});
   }
@@ -122,34 +154,35 @@ class Stats {
   sortByDate() {
     this.daily = this.data.reduce((acc, play) => {
       const date = play.endTime.split(' ')[0];
-      if (!acc[date]) acc[date] = { "artists": {}, "tracks": {} };
+      if (!acc.has(date)) acc.set(date, { "artists": new Map(), "tracks": new Map() } );
 
-      this.updateStats(acc[date].artists, play.artistName, play.msPlayed);
-      this.updateStats(acc[date].tracks, `${play.trackName}_${play.artistName}`, play.msPlayed);
+      this.updateStats(acc.get(date).artists, play.artistName, play.msPlayed);
+      this.updateStats(acc.get(date).tracks, `${play.trackName}_${play.artistName}`, play.msPlayed);
 
       return acc;
-    }, {});
+    }, new Map());
 
     this.dailyArray = this.convertToSortedArray(this.daily);
   }
 
-  updateStats(statsObj, key, msPlayed) {
-    if (!statsObj[key]) {
-      statsObj[key] = { ms: 0, rep: 0 };
+  updateStats(statsMap, key, msPlayed) {
+    if (!statsMap.has(key)) {
+      statsMap.set(key, { ms: 0, rep: 0 });
     }
-    statsObj[key].ms += msPlayed;
-    statsObj[key].rep += 1;
+    const stat = statsMap.get(key);
+    stat.ms += msPlayed;
+    stat.rep += 1;
   }
 
-  getAllTopForDay() {
-    this.allTopForDay = this.dailyArray.reduce((acc, day) => {
-      acc[day.date] = {
-        artists: this.getTopItemsForDay([day], 'artists')[day.date],
-        tracks: this.getTopItemsForDay([day], 'tracks')[day.date]
-      };
-      return acc;
-    }, {});
-  }
+  // getAllTopForDay() {
+  //   this.allTopForDay = this.dailyArray.reduce((acc, day) => {
+  //     acc[day.date] = {
+  //       artists: this.getTopItemsForDay([day], 'artists')[day.date],
+  //       tracks: this.getTopItemsForDay([day], 'tracks')[day.date]
+  //     };
+  //     return acc;
+  //   }, {});
+  // }
 }
 
 export { Stats };
